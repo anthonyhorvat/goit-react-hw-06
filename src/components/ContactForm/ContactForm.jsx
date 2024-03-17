@@ -1,48 +1,58 @@
-import React, { useState } from 'react';
-import { nanoid } from 'nanoid';
-import { FormInput, InputName, NeonButton } from './ContactForm.styled';
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { FormInput, InputName, NeonButton } from "./ContactForm.styled";
+import { Notify } from "notiflix";
+import { addContact } from "../../redux/contactsSlice";
 
-const ContactForm = ({ addContact }) => {
-  const [name, setName] = useState('');
-  const [number, setNumber] = useState('');
+const ContactForm = () => {
+  const dispatch = useDispatch();
+  const contacts = useSelector((state) => state.contacts);
 
-  const handleNameChange = event => {
-    setName(event.target.value);
+  const [formData, setFormData] = useState({ name: "", number: "" });
+
+  const inputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prevForm) => ({ ...prevForm, [name]: value }));
+    console.log(event);
   };
 
-  const handleNumberChange = event => {
-    setNumber(event.target.value);
-  };
-
-  const handleAddContact = event => {
+  const handleSubmit = (event) => {
     event.preventDefault();
+    const isDuplicate =
+      formData.name &&
+      contacts.some((contact) => contact.name === formData.name);
 
-    if (!name || !number) return;
+    if (isDuplicate) {
+      Notify.info(`${formData.name} is already in contacts`);
+      reset();
+    } else {
+      dispatch(addContact(formData));
+      reset();
+    }
+  };
 
-    const id = nanoid();
-    const newContact = { id, name, number };
-
-    addContact(newContact);
-    setName('');
-    setNumber('');
+  const reset = () => {
+    setFormData({ name: "", number: "" });
   };
 
   return (
-    <form onSubmit={handleAddContact}>
+    <form onSubmit={handleSubmit}>
       <InputName>Name</InputName>
       <FormInput
         type="text"
-        value={name}
-        onChange={handleNameChange}
+        value={formData.name}
+        onChange={inputChange}
         placeholder="Enter name"
+        name="name"
         required
       />
       <InputName>Number</InputName>
       <FormInput
-        type="text"
-        value={number}
-        onChange={handleNumberChange}
+        type="tel"
+        value={formData.number}
+        onChange={inputChange}
         placeholder="Enter number"
+        name="number"
         required
       />
       <NeonButton type="submit">Add contact</NeonButton>
